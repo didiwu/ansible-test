@@ -1,0 +1,50 @@
+---
+# tasks file for common
+- name: disable unneeded services
+  systemd: name={{ item }} state=stopped enabled=no
+  with_items:
+   - kdump
+   - postfix 
+  when: "{{is_rhel7}}"
+
+- name: update MOTD
+  copy: src=motd.txt dest=/etc/motd
+
+- name: set timezone to Australia/Melbourne
+  timezone:
+   name: Australia/Melbourne
+
+- name: disable password authentication
+  lineinfile:
+   dest: /etc/ssh/sshd_config
+   regexp: '^PasswordAuthentication'
+   line: 'PasswordAuthentication no'
+  notify: restart sshd
+
+- name: create common user on all servers
+  user: 
+   name: eddy
+   comment: "Eddy the man"
+   uid: 1001
+   shell: /bin/bash
+   password: "{{eddy_pass}}"
+
+- name: set authorized key for eddy
+  authorized_key:
+   user: eddy
+   state: present
+   key: "{{ lookup('file', '/home/ec2-user/.ssh/id_rsa.pub') }}"
+
+- name: allow eddy to have passwordless sudo
+  lineinfile:
+   dest: /etc/sudoers.d/eddy
+   create: yes
+   state: present
+   line: 'eddy ALL=(ALL) NOPASSWD: ALL'
+   mode: 0400
+   validate: "visudo -cf %s"
+
+- name: update hosts file
+  template:
+   src: hosts.j2
+   dest: /etc/hosts

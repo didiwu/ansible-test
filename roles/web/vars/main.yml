@@ -1,0 +1,6 @@
+---
+# vars file for web
+server_root: /etc/httpd
+server_admin: admin@mywebsite.com
+http_port: 8080
+
